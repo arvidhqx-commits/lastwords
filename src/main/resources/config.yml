@@ -1,0 +1,28 @@
+# LastWords — custom death messages
+# Placeholders: {player} {killer} {weapon} {x} {y} {z} {world}
+# {killer}/{weapon} only fill for PLAYER kills. Colors: MiniMessage or & codes.
+# One message is picked at random from the matching pool.
+
+# Show death coordinates to the dying player (private message)
+tell-coordinates: true
+coordinates-message: '<gray>You died at <white>{x} {y} {z}</white> in <white>{world}</white>.</gray>'
+
+# Pools by cause. Causes: PLAYER, FALL, LAVA, FIRE, DROWNING, VOID, EXPLOSION,
+# PROJECTILE, STARVATION, FREEZE, MAGIC, WITHER, POISON, SUFFOCATION, CONTACT, DEFAULT
+messages:
+  PLAYER:
+    - '<red>☠</red> <white>{player}</white> <gray>was slain by</gray> <white>{killer}</white> <gray>using</gray> <yellow>{weapon}</yellow>'
+    - '<red>☠</red> <white>{killer}</white> <gray>sent</gray> <white>{player}</white> <gray>to the respawn screen</gray>'
+  FALL:
+    - '<red>☠</red> <white>{player}</white> <gray>forgot about fall damage</gray>'
+    - '<red>☠</red> <white>{player}</white> <gray>tested gravity. Gravity won.</gray>'
+  LAVA:
+    - '<red>☠</red> <white>{player}</white> <gray>tried to swim in lava</gray>'
+  VOID:
+    - '<red>☠</red> <white>{player}</white> <gray>fell into the endless void</gray>'
+  EXPLOSION:
+    - '<red>☠</red> <white>{player}</white> <gray>went out with a bang</gray>'
+  DROWNING:
+    - '<red>☠</red> <white>{player}</white> <gray>forgot to breathe</gray>'
+  DEFAULT:
+    - '<red>☠</red> <white>{player}</white> <gray>died</gray>'

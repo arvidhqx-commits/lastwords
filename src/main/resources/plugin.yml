@@ -1,0 +1,12 @@
+name: LastWords
+version: '${version}'
+main: dev.lastwords.LastWordsPlugin
+api-version: '1.21'
+description: Custom death messages with MiniMessage colors, per-cause pools, coordinates and kill weapons.
+commands:
+  lastwords:
+    description: Reload LastWords
+    permission: lastwords.reload
+permissions:
+  lastwords.reload:
+    default: op
