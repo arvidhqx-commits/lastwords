@@ -51,12 +51,12 @@ public final class LastWordsPlugin extends JavaPlugin implements Listener {
         if (options.isEmpty()) options = getConfig().getStringList("messages.DEFAULT");
         if (!options.isEmpty()) {
             String raw = options.get(ThreadLocalRandom.current().nextInt(options.size()));
-            event.deathMessage(parse(fill(raw, player)));
+            event.deathMessage(fill(raw, player));
         }
         if (getConfig().getBoolean("tell-coordinates", true)) {
             String coords = getConfig().getString("coordinates-message", "");
             if (!coords.isEmpty()) {
-                player.sendMessage(parse(fill(coords, player)));
+                player.sendMessage(fill(coords, player));
             }
         }
     }
@@ -85,7 +85,15 @@ public final class LastWordsPlugin extends JavaPlugin implements Listener {
         return getConfig().contains("messages." + cause) ? cause : "DEFAULT";
     }
 
-    private String fill(String raw, Player player) {
+    /**
+     * Setzt die Platzhalter ein. {weapon} ist FREMDER Text: der Anzeigename eines
+     * Items, den jeder Spieler am Amboss frei waehlt. Frueher wurde er als
+     * Zeichenkette in die Vorlage eingesetzt und erst danach geparst -- ein Schwert
+     * namens "&kBoss" haette damit die ganze Todesmeldung des Servers umformatiert.
+     * Deshalb wird jetzt die Vorlage geparst (die stammt vom Serverbetreiber) und die
+     * Werte werden als fertige Komponenten eingesetzt.
+     */
+    private Component fill(String raw, Player player) {
         Location loc = player.getLocation();
         String killer = player.getKiller() != null ? player.getKiller().getName() : "?";
         String weapon = "fists";
@@ -97,13 +105,15 @@ public final class LastWordsPlugin extends JavaPlugin implements Listener {
                         : prettify(item.getType().name());
             }
         }
-        return raw.replace("{player}", player.getName())
-                .replace("{killer}", killer)
-                .replace("{weapon}", weapon)
-                .replace("{x}", String.valueOf(loc.getBlockX()))
-                .replace("{y}", String.valueOf(loc.getBlockY()))
-                .replace("{z}", String.valueOf(loc.getBlockZ()))
-                .replace("{world}", loc.getWorld().getName());
+        String weaponText = weapon;
+        return parse(raw)
+                .replaceText(r -> r.matchLiteral("{player}").replacement(Component.text(player.getName())))
+                .replaceText(r -> r.matchLiteral("{killer}").replacement(Component.text(killer)))
+                .replaceText(r -> r.matchLiteral("{weapon}").replacement(Component.text(weaponText)))
+                .replaceText(r -> r.matchLiteral("{x}").replacement(Component.text(loc.getBlockX())))
+                .replaceText(r -> r.matchLiteral("{y}").replacement(Component.text(loc.getBlockY())))
+                .replaceText(r -> r.matchLiteral("{z}").replacement(Component.text(loc.getBlockZ())))
+                .replaceText(r -> r.matchLiteral("{world}").replacement(Component.text(loc.getWorld().getName())));
     }
 
     private String prettify(String enumName) {
