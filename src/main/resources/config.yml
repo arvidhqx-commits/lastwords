@@ -2,6 +2,9 @@
 # Placeholders: {player} {killer} {weapon} {x} {y} {z} {world}
 # {killer}/{weapon} only fill for PLAYER kills. Colors: MiniMessage or & codes.
 # One message is picked at random from the matching pool.
+# A pool may be a list or a single string. Remove a pool to fall back to DEFAULT;
+# remove ALL pools (messages: {}) to keep the vanilla death messages.
+# A death message that another plugin already silenced stays silent.
 
 # Show death coordinates to the dying player (private message)
 tell-coordinates: true

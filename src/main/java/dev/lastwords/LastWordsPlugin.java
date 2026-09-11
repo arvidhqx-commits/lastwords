@@ -17,6 +17,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class LastWordsPlugin extends JavaPlugin implements Listener {
@@ -45,10 +47,16 @@ public final class LastWordsPlugin extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onDeath(PlayerDeathEvent event) {
+        // FREMDER ZUSTAND: hat ein Plugin mit niedrigerer Prioritaet die Meldung
+        // stummgeschaltet (Minigame-Arena, Vanish), ist das eine Entscheidung, keine
+        // Luecke. Vanilla liefert hier immer eine Meldung; null/leer kommt nur von
+        // anderen Plugins (gefunden 11.09.2026).
+        Component vanilla = event.deathMessage();
+        if (vanilla == null || PlainTextComponentSerializer.plainText().serialize(vanilla).isEmpty()) return;
         Player player = event.getPlayer();
         String pool = poolFor(player);
-        List<String> options = getConfig().getStringList("messages." + pool);
-        if (options.isEmpty()) options = getConfig().getStringList("messages.DEFAULT");
+        List<String> options = pool(pool);
+        if (options.isEmpty()) options = pool("DEFAULT");
         if (!options.isEmpty()) {
             String raw = options.get(ThreadLocalRandom.current().nextInt(options.size()));
             event.deathMessage(fill(raw, player));
@@ -82,7 +90,22 @@ public final class LastWordsPlugin extends JavaPlugin implements Listener {
             case CONTACT -> "CONTACT";
             default -> "DEFAULT";
         };
-        return getConfig().contains("messages." + cause) ? cause : "DEFAULT";
+        return getConfig().contains("messages." + cause, true) ? cause : "DEFAULT";
+    }
+
+    /**
+     * Liest einen Pool NUR aus der Datei des Betreibers. getConfig() legt die
+     * config.yml aus dem Jar als Standard darunter -- ein geloeschter Pool waere
+     * damit still durch den mitgelieferten ersetzt worden, und "messages: {}"
+     * haette die Vanilla-Meldungen nicht zurueckgebracht (gefunden 11.09.2026).
+     * Ein Pool darf auch ein einzelner String statt einer Liste sein.
+     */
+    private List<String> pool(String name) {
+        String path = "messages." + name;
+        if (!getConfig().contains(path, true)) return List.of();
+        if (getConfig().isList(path)) return getConfig().getStringList(path);
+        String single = getConfig().getString(path);
+        return single == null || single.isEmpty() ? List.of() : List.of(single);
     }
 
     /**
@@ -105,16 +128,18 @@ public final class LastWordsPlugin extends JavaPlugin implements Listener {
                         : prettify(item.getType().name());
             }
         }
-        String weaponText = weapon;
-        return parse(raw)
-                .replaceText(r -> r.matchLiteral("{player}").replacement(Component.text(player.getName())))
-                .replaceText(r -> r.matchLiteral("{killer}").replacement(Component.text(killer)))
-                .replaceText(r -> r.matchLiteral("{weapon}").replacement(Component.text(weaponText)))
-                .replaceText(r -> r.matchLiteral("{x}").replacement(Component.text(loc.getBlockX())))
-                .replaceText(r -> r.matchLiteral("{y}").replacement(Component.text(loc.getBlockY())))
-                .replaceText(r -> r.matchLiteral("{z}").replacement(Component.text(loc.getBlockZ())))
-                .replaceText(r -> r.matchLiteral("{world}").replacement(Component.text(loc.getWorld().getName())));
+        Map<String, String> values = Map.of(
+                "player", player.getName(), "killer", killer, "weapon", weapon,
+                "x", String.valueOf(loc.getBlockX()), "y", String.valueOf(loc.getBlockY()),
+                "z", String.valueOf(loc.getBlockZ()), "world", loc.getWorld().getName());
+        // EIN Durchlauf ueber die Vorlage: sieben Durchlaeufe nacheinander haetten den
+        // schon eingesetzten Waffennamen erneut durchsucht -- ein Schwert namens
+        // "{x} {y} {z}" haette die Koordinaten des Opfers in den Broadcast gesetzt.
+        return parse(raw).replaceText(r -> r.match(PLACEHOLDER)
+                .replacement((match, b) -> Component.text(values.get(match.group(1)))));
     }
+
+    private static final Pattern PLACEHOLDER = Pattern.compile("\\{(player|killer|weapon|x|y|z|world)}");
 
     private String prettify(String enumName) {
         String[] parts = enumName.toLowerCase(Locale.ROOT).split("_");
