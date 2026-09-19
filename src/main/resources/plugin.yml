@@ -2,6 +2,7 @@ name: LastWords
 version: '${version}'
 main: dev.lastwords.LastWordsPlugin
 api-version: '1.21'
+folia-supported: true
 description: Custom death messages with MiniMessage colors, per-cause pools, coordinates and kill weapons.
 commands:
   lastwords:
